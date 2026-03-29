@@ -1,0 +1,19 @@
+# Core HTTP
+requests==2.32.3
+
+# Image rendering
+Pillow==10.4.0
+
+# Timezone support (stdlib zoneinfo needs tzdata on some systems)
+tzdata==2024.1
+pytz==2024.1
+
+# Google Calendar API
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.151.0
+
+# MTA GTFS-RT
+gtfs-realtime-bindings==1.0.0
+protobuf==4.25.5
