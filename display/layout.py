@@ -78,12 +78,12 @@ class Region:
 # Named screen regions
 # ---------------------------------------------------------------------------
 
-HEADER: Region = Region(x=0, y=0, w=config.DISPLAY_WIDTH, h=80)
+HEADER: Region = Region(x=0, y=0, w=config.DISPLAY_WIDTH, h=100)
 
 # Header sub-regions
-HEADER_TIME: Region = Region(x=0, y=0, w=260, h=80)
-HEADER_DATE: Region = Region(x=260, y=0, w=280, h=80)
-HEADER_WEATHER: Region = Region(x=540, y=0, w=260, h=80)
+HEADER_TIME: Region = Region(x=0, y=0, w=260, h=100)
+HEADER_DATE: Region = Region(x=260, y=0, w=280, h=100)
+HEADER_WEATHER: Region = Region(x=540, y=0, w=260, h=100)
 
 # Middle row
 _MIDDLE_Y: int = HEADER.h

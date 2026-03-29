@@ -26,10 +26,11 @@ from renderers.base import BaseRenderer
 logger = logging.getLogger(__name__)
 
 _SECTION_HEADER = "CALENDAR"
-_HEADER_HEIGHT = 30
+_HEADER_HEIGHT = 38
 _ROW_PAD = 4
 _LEFT_PAD = 10
-_TIME_COL_WIDTH = 72   # pixels reserved for the time label
+_TIME_COL_WIDTH = 96   # pixels reserved for the time label
+_TIME_TITLE_GAP = 10  # gap between time and event title
 
 
 class CalendarRenderer(BaseRenderer):
@@ -74,26 +75,42 @@ class CalendarRenderer(BaseRenderer):
             return
 
         # ── Event rows ────────────────────────────────────────────────
-        row_height = self._text_height(self.fonts.md) + _ROW_PAD
-        y = r.y + _HEADER_HEIGHT + 6
+        md_h = self._text_height(self.fonts.md)
+        sm_h = self._text_height(self.fonts.sm)
+        row_height = md_h + _ROW_PAD
+        y = r.y + _HEADER_HEIGHT + 40
 
-        max_title_width = r.w - _LEFT_PAD - _TIME_COL_WIDTH - 8
+        time_x = r.x + _LEFT_PAD
+        title_x = r.x + _LEFT_PAD + _TIME_COL_WIDTH + _TIME_TITLE_GAP
 
         for event in data:
             if y + row_height > r.y2:
                 break  # region full
 
             time_str = self._format_time(event)
+            dur_str = self._format_duration(event)
+
+            # Right-align duration; title truncated so it doesn't collide.
+            if dur_str:
+                dur_w = self._text_width(dur_str, self.fonts.sm)
+                dur_x = r.x2 - _LEFT_PAD - dur_w
+                max_title_width = dur_x - title_x - 8
+            else:
+                dur_x = None
+                max_title_width = r.x2 - title_x - _LEFT_PAD
+
             title = self.truncate_text(event.title, self.fonts.md, max_title_width)
 
-            # Time label (small, right-aligned within its column)
-            time_x = r.x + _LEFT_PAD
-            time_font = self.fonts.sm
-            self.draw_text(time_x, y + 2, time_str, time_font)
+            # Time label (small font)
+            self.draw_text(time_x, y + 2, time_str, self.fonts.sm)
 
             # Event title
-            title_x = r.x + _LEFT_PAD + _TIME_COL_WIDTH
             self.draw_text(title_x, y, title, self.fonts.md)
+
+            # Duration (right-aligned, vertically centred with title)
+            if dur_x is not None:
+                dur_y = y + (md_h - sm_h) // 2 + 2
+                self.draw_text(dur_x, dur_y, dur_str, self.fonts.sm)
 
             y += row_height
 
@@ -111,3 +128,23 @@ class CalendarRenderer(BaseRenderer):
         if event.is_all_day:
             return "All day"
         return event.start_time.strftime("%-I:%M %p")
+
+    @staticmethod
+    def _format_duration(event: CalendarEvent) -> str:
+        """Return a compact duration string, e.g. '30m', '1h', '1h 30m'.
+
+        Returns an empty string for all-day events or zero-duration events.
+        """
+        if event.is_all_day:
+            return ""
+        delta = event.end_time - event.start_time
+        total_minutes = round(delta.total_seconds() / 60)
+        if total_minutes <= 0:
+            return ""
+        hours = total_minutes // 60
+        mins = total_minutes % 60
+        if hours == 0:
+            return f"{mins}m"
+        if mins == 0:
+            return f"{hours}h"
+        return f"{hours}h {mins}m"

@@ -25,9 +25,11 @@ from zoneinfo import ZoneInfo
 os.environ["MOCK_MODE"] = "1"
 
 # Add the project root to sys.path so relative imports resolve correctly.
+# Also chdir there so relative asset paths (fonts, etc.) resolve correctly.
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
+os.chdir(_PROJECT_ROOT)
 
 import logging
 
@@ -126,13 +128,13 @@ def main() -> None:
     date_str = now.strftime("%a, %b %-d")
     r = HEADER_TIME
     try:
-        draw.text((r.x + 10, r.y + (r.h - fonts.xl.size) // 2), time_str, font=fonts.xl, fill=0)  # type: ignore[attr-defined]
+        draw.text((r.x + 10, r.y + (r.h - fonts.xl.size) // 2 - 3), time_str, font=fonts.xl, fill=0)  # type: ignore[attr-defined]
     except Exception:
         draw.text((r.x + 10, r.y + 10), time_str, font=fonts.xl, fill=0)
 
     r = HEADER_DATE
     try:
-        draw.text((r.x + 8, r.y + (r.h - fonts.lg.size) // 2), date_str, font=fonts.lg, fill=0)  # type: ignore[attr-defined]
+        draw.text((r.x + 8, r.y + (r.h - fonts.lg.size) // 2 - 3), date_str, font=fonts.lg, fill=0)  # type: ignore[attr-defined]
     except Exception:
         draw.text((r.x + 8, r.y + 10), date_str, font=fonts.lg, fill=0)
 

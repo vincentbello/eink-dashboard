@@ -68,7 +68,7 @@ class WeatherRenderer(BaseRenderer):
         self.draw_text(text_x, text_y, temp_str, self.fonts.lg)
 
         # Condition
-        cond_y = text_y + self._text_height(self.fonts.lg) + 2
+        cond_y = text_y + self._text_height(self.fonts.lg) - 4
         cond = self.truncate_text(
             data.condition, self.fonts.sm, r.x2 - text_x - 4
         )
@@ -76,7 +76,9 @@ class WeatherRenderer(BaseRenderer):
 
         # Wind
         wind_y = cond_y + self._text_height(self.fonts.sm) + 2
-        wind_str = f"Wind {data.wind_speed:.0f} mph"
+        wind_str = self.truncate_text(
+            f"Wind {data.wind_speed:.0f} mph", self.fonts.sm, r.x2 - text_x - 4
+        )
         self.draw_text(text_x, wind_y, wind_str, self.fonts.sm)
 
     # ------------------------------------------------------------------

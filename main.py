@@ -97,7 +97,7 @@ def _render_header_time_date(
     time_str = now.strftime("%-I:%M %p")
     r = HEADER_TIME
     draw.text(
-        (r.x + 10, r.y + (r.h - fonts.xl.size) // 2),  # type: ignore[attr-defined]
+        (r.x + 10, r.y + (r.h - fonts.xl.size) // 2 - 3),  # type: ignore[attr-defined]
         time_str,
         font=fonts.xl,
         fill=0,
@@ -107,7 +107,7 @@ def _render_header_time_date(
     date_str = now.strftime("%a, %b %-d")
     r = HEADER_DATE
     draw.text(
-        (r.x + 8, r.y + (r.h - fonts.lg.size) // 2),  # type: ignore[attr-defined]
+        (r.x + 8, r.y + (r.h - fonts.lg.size) // 2 - 3),  # type: ignore[attr-defined]
         date_str,
         font=fonts.lg,
         fill=0,

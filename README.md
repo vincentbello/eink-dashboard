@@ -5,7 +5,7 @@ A Raspberry Pi–powered always-on fridge display showing:
 - **Clock & date** (header)
 - **Current weather** (Open-Meteo, no API key)
 - **Google Calendar events** (today's schedule)
-- **NYC Subway arrivals** (MTA GTFS-RT)
+- **NYC Subway arrivals** (MTA GTFS-RT, no API key)
 - **Citi Bike availability** (GBFS, no API key)
 
 Target hardware: Raspberry Pi 4 + Waveshare 7.5-inch V2 e-ink display (800×480 px).
@@ -15,7 +15,7 @@ Target hardware: Raspberry Pi 4 + Waveshare 7.5-inch V2 e-ink display (800×480 
 ## Table of Contents
 
 1. [Hardware requirements](#1-hardware-requirements)
-2. [MTA API key and stop ID](#2-mta-api-key-and-stop-id)
+2. [Subway stop ID and feed URL](#2-subway-stop-id-and-feed-url)
 3. [Citi Bike station IDs](#3-citi-bike-station-ids)
 4. [Google Calendar OAuth setup](#4-google-calendar-oauth-setup)
 5. [Installation](#5-installation)
@@ -27,12 +27,12 @@ Target hardware: Raspberry Pi 4 + Waveshare 7.5-inch V2 e-ink display (800×480 
 
 ## 1. Hardware requirements
 
-| Component | Notes |
-|-----------|-------|
-| Raspberry Pi 4 (2 GB+ RAM) | Also works on Pi 3B+ or Pi Zero 2W |
-| Waveshare 7.5-inch e-Paper HAT V2 | 800×480, black & white |
-| MicroSD card (16 GB+) | Raspberry Pi OS (Bookworm, 64-bit) recommended |
-| Power supply | Official 5 V / 3 A USB-C PSU for Pi 4 |
+| Component                         | Notes                                          |
+| --------------------------------- | ---------------------------------------------- |
+| Raspberry Pi 4 (2 GB+ RAM)        | Also works on Pi 3B+ or Pi Zero 2W             |
+| Waveshare 7.5-inch e-Paper HAT V2 | 800×480, black & white                         |
+| MicroSD card (16 GB+)             | Raspberry Pi OS (Bookworm, 64-bit) recommended |
+| Power supply                      | Official 5 V / 3 A USB-C PSU for Pi 4          |
 
 ### Wiring (HAT)
 
@@ -48,40 +48,31 @@ sudo reboot
 
 ---
 
-## 2. MTA API key and stop ID
+## 2. Subway stop ID and feed URL
 
-### Get a free MTA API key
-
-1. Go to <https://api.mta.info/#/signup> and create a free account.
-2. Once logged in, navigate to **My Account → API Keys** and generate a key.
-3. Copy the key into `config.py` as `MTA_API_KEY`, or export it as an
-   environment variable:
-
-   ```bash
-   export MTA_API_KEY="your_key_here"
-   ```
+The MTA GTFS-RT feeds are publicly accessible — no API key required.
 
 ### Choose the correct feed URL
 
 Each subway line group has its own GTFS-RT feed. Update `SUBWAY_LINE_FEED_URL`
 in `config.py` for the line(s) serving your stop:
 
-| Lines | Feed URL |
-|-------|----------|
-| 1 / 2 / 3 / 4 / 5 / 6 / 7 | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs` |
-| A / C / E | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace` |
-| B / D / F / M | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm` |
-| G | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g` |
-| J / Z | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz` |
-| L | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l` |
-| N / Q / R / W | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw` |
-| Staten Island Railway | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-si` |
+| Lines                      | Feed URL                                                                   |
+| -------------------------- | -------------------------------------------------------------------------- |
+| 1 / 2 / 3 / 4 / 5 / 6 / 7 | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs`       |
+| A / C / E                  | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace`   |
+| B / D / F / M              | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm`  |
+| G                          | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g`     |
+| J / Z                      | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz`    |
+| L                          | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l`     |
+| N / Q / R / W              | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw`  |
+| Staten Island Railway      | `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-si`    |
 
 ---
 
 ## 8. Finding your subway stop ID
 
-Stop IDs follow the pattern `<number><direction>` where direction is
+Stop IDs follow the pattern `<station_code><direction>` where direction is
 `N` (northbound / Uptown) or `S` (southbound / Downtown).
 
 ### Method 1 — MTA static GTFS
@@ -92,26 +83,41 @@ Stop IDs follow the pattern `<number><direction>` where direction is
 2. Unzip and open `stops.txt`. Search for your station name:
 
    ```bash
-   grep -i "canal" stops.txt
+   grep -i "bedford" stops.txt
    ```
 
    Example output:
+
    ```
-   120N,Canal St,40.7219,-74.0051,...
-   120S,Canal St,40.7219,-74.0051,...
+   L08N,Bedford Av,...
+   L08S,Bedford Av,...
    ```
 
-3. Use `120N` for Uptown trains or `120S` for Downtown trains.
+3. Use the `N` suffix for Uptown/Manhattan-bound trains, `S` for the other direction.
 
-### Method 2 — Online lookup
+### Method 2 — Python one-liner
 
-Visit <https://api.mta.info/doc/GTFS-Realtime-Feed-Codes.pdf> for a
-printable reference of all stop IDs.
+Fetch and filter from the MTA's own GTFS zip without downloading it manually:
+
+```bash
+python3 -c "
+import urllib.request, zipfile, io, csv
+url = 'http://web.mta.info/developers/data/nyct/subway/google_transit.zip'
+req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+with urllib.request.urlopen(req, timeout=20) as r:
+    data = r.read()
+with zipfile.ZipFile(io.BytesIO(data)) as z:
+    with z.open('stops.txt') as f:
+        for row in csv.DictReader(line.decode() for line in f):
+            if 'bedford' in row.get('stop_name','').lower():
+                print(row['stop_id'], row['stop_name'])
+"
+```
 
 Set your stop ID in `config.py`:
 
 ```python
-SUBWAY_STOP_ID = "120S"   # Canal St, Downtown (1/2/3)
+SUBWAY_STOP_ID = "L08N"   # Bedford Av, L towards Manhattan
 ```
 
 ---
@@ -130,7 +136,10 @@ Look for your two nearest stations and note their `station_id` values.
 Update `config.py`:
 
 ```python
-CITIBIKE_STATION_IDS = ["3279", "3182"]
+CITIBIKE_STATION_IDS = [
+    "1786698974100683436",                   # N 7 St & Driggs Ave
+    "66dd039b-0aca-11e7-82f6-3863bb44ef7c",  # N 6 St & Bedford Ave
+]
 ```
 
 ---
@@ -158,23 +167,28 @@ then transfer `token.json` to the Pi.
    - Download the JSON file and save it as `credentials.json` in the
      project root.
 
-4. **Run the auth flow once**
+4. **Add yourself as a test user**
+   - Go to **APIs & Services → OAuth consent screen**.
+   - Under **Test users**, add your Gmail address.
+
+5. **Run the auth flow once**
 
    ```bash
-   cd dashboard
-   python3 -c "from fetchers.calendar import fetch_calendar; fetch_calendar()"
+   poetry run python -c "from fetchers.calendar import fetch_calendar; fetch_calendar()"
    ```
 
    A browser window opens. Sign in with your Google account and grant
-   Calendar read access. A `token.json` file is written to the project root.
+   Calendar read access. If prompted with "Google hasn't verified this app",
+   click **Advanced → Go to [app name] (unsafe)**. A `token.json` file is
+   written to the project root.
 
-5. **Transfer files to the Pi** (if you ran the auth flow on a laptop)
+6. **Transfer files to the Pi** (if you ran the auth flow on a laptop)
 
    ```bash
    scp credentials.json token.json pi@raspberrypi.local:~/dashboard/
    ```
 
-6. The `token.json` is refreshed automatically when it expires.
+7. The `token.json` is refreshed automatically when it expires.
    You should never need to repeat the OAuth flow unless you revoke access.
 
 > **Security note:** `credentials.json` and `token.json` contain sensitive
@@ -188,13 +202,15 @@ then transfer `token.json` to the Pi.
 ### Run the setup script (Raspberry Pi only)
 
 ```bash
-git clone https://github.com/yourname/dashboard.git
-cd dashboard
+git clone https://github.com/yourname/eink-dashboard.git
+cd eink-dashboard
 sudo ./scripts/setup.sh
 ```
 
 The script:
-- Installs system and Python dependencies into a `.venv` virtual environment
+
+- Installs system dependencies (apt) and Poetry
+- Installs Python dependencies via `poetry install`
 - Clones the Waveshare e-Paper library
 - Downloads DejaVu fonts into `assets/fonts/`
 - Creates `/etc/systemd/system/dashboard.service`
@@ -203,9 +219,8 @@ The script:
 ### Manual installation (any platform)
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+pip install poetry          # if not already installed
+poetry install
 ```
 
 ---
@@ -215,12 +230,11 @@ pip install -r requirements.txt
 Run the full pipeline on any machine (no Pi or e-ink panel required):
 
 ```bash
-cd dashboard
-source .venv/bin/activate           # or activate your environment
-python tests/mock_display.py
+poetry run python tests/mock_display.py
 ```
 
 This will:
+
 1. Fetch live data from all four APIs
 2. Render the full layout to `mock_output.png`
 3. Print a summary of fetched data to stdout
@@ -230,7 +244,7 @@ Open `mock_output.png` in any image viewer to inspect the layout.
 You can also set `MOCK_MODE=1` when running `main.py` directly:
 
 ```bash
-MOCK_MODE=1 python main.py
+MOCK_MODE=1 poetry run python main.py
 ```
 
 ---
@@ -239,22 +253,21 @@ MOCK_MODE=1 python main.py
 
 All configuration lives in `config.py`. Key settings:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LATITUDE` / `LONGITUDE` | 40.7128 / -74.0060 | Your GPS coordinates (NYC default) |
-| `TIMEZONE` | `America/New_York` | Local timezone string |
-| `MTA_API_KEY` | — | MTA GTFS-RT API key |
-| `SUBWAY_STOP_ID` | `120S` | GTFS stop ID (see §8) |
-| `SUBWAY_LINE_FEED_URL` | 1/2/3 feed | GTFS-RT feed URL for your line |
-| `NUM_ARRIVALS_TO_SHOW` | `3` | How many upcoming trains to display |
-| `CITIBIKE_STATION_IDS` | `["3279", "3182"]` | GBFS station IDs (see §3) |
-| `GOOGLE_CALENDAR_ID` | `primary` | Calendar ID (or a specific calendar ID) |
-| `GOOGLE_CREDENTIALS_PATH` | `credentials.json` | OAuth credentials file path |
-| `NUM_CALENDAR_EVENTS` | `5` | Max events to display |
-| `MOCK_MODE` | `False` | Set `True` (or `MOCK_MODE=1`) to render to PNG |
-| `TRANSIT_REFRESH_INTERVAL` | `60` | Subway + Citi Bike refresh rate (seconds) |
-| `FULL_REFRESH_INTERVAL` | `900` | Full screen redraw rate (seconds, default 15 min) |
-| `LOG_LEVEL` | `INFO` | Python log level (`DEBUG`, `INFO`, `WARNING`, …) |
+| Variable                   | Default                              | Description                                       |
+| -------------------------- | ------------------------------------ | ------------------------------------------------- |
+| `LATITUDE` / `LONGITUDE`   | 40.7178 / -73.9574                   | Your GPS coordinates                              |
+| `TIMEZONE`                 | `America/New_York`                   | Local timezone string                             |
+| `SUBWAY_STOP_ID`           | `L08N`                               | GTFS stop ID (see §8)                             |
+| `SUBWAY_LINE_FEED_URL`     | L feed                               | GTFS-RT feed URL for your line                    |
+| `NUM_ARRIVALS_TO_SHOW`     | `3`                                  | How many upcoming trains to display               |
+| `CITIBIKE_STATION_IDS`     | N 7 St & Driggs, N 6 St & Bedford   | GBFS station IDs (see §3)                         |
+| `GOOGLE_CALENDAR_IDS`      | `["primary", ...]`                   | List of calendar IDs to merge and display         |
+| `GOOGLE_CREDENTIALS_PATH`  | `credentials.json`                   | OAuth credentials file path                       |
+| `NUM_CALENDAR_EVENTS`      | `5`                                  | Max events to display                             |
+| `MOCK_MODE`                | `False`                              | Set `True` (or `MOCK_MODE=1`) to render to PNG    |
+| `TRANSIT_REFRESH_INTERVAL` | `60`                                 | Subway + Citi Bike refresh rate (seconds)         |
+| `FULL_REFRESH_INTERVAL`    | `900`                                | Full screen redraw rate (seconds, default 15 min) |
+| `LOG_LEVEL`                | `INFO`                               | Python log level (`DEBUG`, `INFO`, `WARNING`, …)  |
 
 ### Viewing logs
 

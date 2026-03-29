@@ -1,8 +1,7 @@
 """
 fetchers/subway.py — Real-time subway arrivals from the MTA GTFS-RT feed.
 
-Requires an MTA API key (free): https://api.mta.info/#/signup
-Set MTA_API_KEY in config.py or the MTA_API_KEY environment variable.
+The MTA GTFS-RT feed is publicly accessible — no API key required.
 
 The protobuf feed is parsed using gtfs-realtime-bindings.
 """
@@ -61,7 +60,6 @@ def fetch_subway() -> Optional[list[SubwayArrival]]:
     try:
         resp = requests.get(
             config.SUBWAY_LINE_FEED_URL,
-            headers={"x-api-key": config.MTA_API_KEY},
             timeout=_HTTP_TIMEOUT,
         )
         resp.raise_for_status()

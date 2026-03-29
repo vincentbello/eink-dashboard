@@ -6,11 +6,12 @@
 #   sudo ./scripts/setup.sh
 #
 # What this script does:
-#   1. Installs system (apt) and Python (pip) dependencies
-#   2. Clones the Waveshare e-Paper library and installs its Python module
-#   3. Downloads DejaVu fonts into assets/fonts/
-#   4. Creates a systemd service that starts the dashboard on boot
-#   5. Enables and starts the service
+#   1. Installs system (apt) dependencies and Poetry
+#   2. Installs Python dependencies via poetry install
+#   3. Clones the Waveshare e-Paper library and installs its Python module
+#   4. Downloads DejaVu fonts into assets/fonts/
+#   5. Creates a systemd service that starts the dashboard on boot
+#   6. Enables and starts the service
 
 set -euo pipefail
 
@@ -49,10 +50,7 @@ log "Installing system packages…"
 apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
-    python3-venv \
     python3-dev \
-    python3-setuptools \
-    python3-wheel \
     libopenjp2-7 \
     libtiff5 \
     libjpeg-dev \
@@ -63,19 +61,21 @@ apt-get install -y --no-install-recommends \
     wget
 
 # ---------------------------------------------------------------------------
-# 2. Python virtual environment + pip packages
+# 2. Poetry + Python dependencies
 # ---------------------------------------------------------------------------
 
-VENV_DIR="${PROJECT_ROOT}/.venv"
-
-if [[ ! -d "${VENV_DIR}" ]]; then
-    log "Creating Python virtual environment at ${VENV_DIR}…"
-    python3 -m venv "${VENV_DIR}"
+if ! command -v poetry &>/dev/null; then
+    log "Installing Poetry…"
+    sudo -u "${REAL_USER}" pip install --user poetry --quiet
 fi
 
-log "Installing Python dependencies from requirements.txt…"
-"${VENV_DIR}/bin/pip" install --upgrade pip --quiet
-"${VENV_DIR}/bin/pip" install -r "${PROJECT_ROOT}/requirements.txt" --quiet
+POETRY="$(sudo -u "${REAL_USER}" python3 -m site --user-base)/bin/poetry"
+
+log "Installing Python dependencies via Poetry…"
+cd "${PROJECT_ROOT}"
+sudo -u "${REAL_USER}" "${POETRY}" install --no-interaction --quiet
+
+VENV_DIR="$(sudo -u "${REAL_USER}" "${POETRY}" env info --path)"
 
 # ---------------------------------------------------------------------------
 # 3. Waveshare e-Paper library
@@ -93,8 +93,8 @@ else
         "${WAVESHARE_DIR}" --quiet
 fi
 
-log "Installing Waveshare Python library into venv…"
-"${VENV_DIR}/bin/pip" install \
+log "Installing Waveshare Python library via Poetry…"
+sudo -u "${REAL_USER}" "${POETRY}" run pip install \
     "${WAVESHARE_DIR}/RaspberryPi_JetsonNano/python/" --quiet
 
 # ---------------------------------------------------------------------------
@@ -128,10 +128,15 @@ copy_font() {
             return
         fi
     done
-    # Fallback: download directly.
-    log "System font not found — downloading ${src_name} from GitHub…"
-    wget -q -O "${dst}" \
-        "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/${src_name}"
+    # Fallback: download from SourceForge release archive.
+    log "System font not found — downloading from SourceForge…"
+    local tmp_archive
+    tmp_archive="$(mktemp /tmp/dejavu.XXXXXX.tar.bz2)"
+    wget -q -O "${tmp_archive}" \
+        "https://sourceforge.net/projects/dejavu/files/dejavu/2.37/dejavu-fonts-ttf-2.37.tar.bz2/download"
+    tar -xjf "${tmp_archive}" -C /tmp/ dejavu-fonts-ttf-2.37/ttf/"${src_name}"
+    mv "/tmp/dejavu-fonts-ttf-2.37/ttf/${src_name}" "${dst}"
+    rm -f "${tmp_archive}"
 }
 
 copy_font "DejaVuSans.ttf"      "${FONT_REGULAR}"
@@ -193,6 +198,6 @@ log "  sudo systemctl restart dashboard"
 log ""
 log "To test without hardware:"
 log "  cd ${PROJECT_ROOT}"
-log "  MOCK_MODE=1 ${VENV_DIR}/bin/python tests/mock_display.py"
+log "  MOCK_MODE=1 poetry run python tests/mock_display.py"
 log ""
-log "Edit config.py to set your API keys, stop IDs, and station IDs."
+log "Edit config.py to set your stop IDs and station IDs."

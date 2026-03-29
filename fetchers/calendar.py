@@ -43,22 +43,22 @@ class CalendarEvent:
     location: Optional[str]
 
 
-def _load_credentials():  # type: ignore[return]
-    """Load or refresh OAuth2 credentials.
+def _load_credentials(token_path: str):  # type: ignore[return]
+    """Load or refresh OAuth2 credentials for a single account.
 
     Returns a valid :class:`google.oauth2.credentials.Credentials` object,
-    running the OAuth flow if no valid token exists.
+    running the OAuth flow if no valid token exists at *token_path*.
     """
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
 
     creds = None
-    token_path = Path(config.GOOGLE_TOKEN_PATH)
+    t_path = Path(token_path)
     creds_path = Path(config.GOOGLE_CREDENTIALS_PATH)
 
-    if token_path.exists():
-        creds = Credentials.from_authorized_user_file(str(token_path), _SCOPES)
+    if t_path.exists():
+        creds = Credentials.from_authorized_user_file(str(t_path), _SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -72,9 +72,24 @@ def _load_credentials():  # type: ignore[return]
             flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), _SCOPES)
             creds = flow.run_local_server(port=0)
 
-        token_path.write_text(creds.to_json())
+        t_path.write_text(creds.to_json())
 
     return creds
+
+
+def _is_reclaim_sync(item: dict) -> bool:
+    """Return True if this event was synced by Reclaim.ai.
+
+    Reclaim creates calendar blocks whose organizer email is on the
+    reclaim.ai domain, or whose description contains a Reclaim signature.
+    """
+    organizer = item.get("organizer", {}).get("email", "")
+    if "reclaim.ai" in organizer.lower():
+        return True
+    description = item.get("description", "") or ""
+    if "reclaim.ai" in description.lower():
+        return True
+    return False
 
 
 def fetch_calendar() -> Optional[list[CalendarEvent]]:
@@ -90,57 +105,80 @@ def fetch_calendar() -> Optional[list[CalendarEvent]]:
         from googleapiclient.discovery import build
         import pytz
 
-        creds = _load_credentials()
-        service = build("calendar", "v3", credentials=creds)
-
         tz = ZoneInfo(config.TIMEZONE)
         now = datetime.now(tz)
         end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=0)
 
-        events_result = (
-            service.events()
-            .list(
-                calendarId=config.GOOGLE_CALENDAR_ID,
-                timeMin=now.isoformat(),
-                timeMax=end_of_day.isoformat(),
-                maxResults=config.NUM_CALENDAR_EVENTS,
-                singleEvents=True,
-                orderBy="startTime",
-            )
-            .execute()
-        )
-
-        items = events_result.get("items", [])
         events: list[CalendarEvent] = []
+        total_calendars = 0
 
-        for item in items:
-            start_raw = item["start"]
-            end_raw = item["end"]
+        for account in config.GOOGLE_CALENDAR_ACCOUNTS:
+            token_path: str = account["token_path"]
+            calendar_ids: list[str] = account["calendar_ids"]
 
-            is_all_day = "date" in start_raw and "dateTime" not in start_raw
+            try:
+                creds = _load_credentials(token_path)
+                service = build("calendar", "v3", credentials=creds)
+            except Exception:
+                logger.exception("Failed to authenticate with token %s", token_path)
+                continue
 
-            if is_all_day:
-                # All-day events: use midnight in the configured timezone.
-                start_dt = datetime.fromisoformat(start_raw["date"]).replace(
-                    tzinfo=tz
-                )
-                end_dt = datetime.fromisoformat(end_raw["date"]).replace(tzinfo=tz)
-            else:
-                start_dt = datetime.fromisoformat(start_raw["dateTime"]).astimezone(tz)
-                end_dt = datetime.fromisoformat(end_raw["dateTime"]).astimezone(tz)
+            for calendar_id in calendar_ids:
+                total_calendars += 1
+                try:
+                    events_result = (
+                        service.events()
+                        .list(
+                            calendarId=calendar_id,
+                            timeMin=now.isoformat(),
+                            timeMax=end_of_day.isoformat(),
+                            maxResults=config.NUM_CALENDAR_EVENTS,
+                            singleEvents=True,
+                            orderBy="startTime",
+                        )
+                        .execute()
+                    )
+                except Exception:
+                    logger.exception("Failed to fetch calendar %s", calendar_id)
+                    continue
 
-            events.append(
-                CalendarEvent(
-                    title=item.get("summary", "(No title)"),
-                    start_time=start_dt,
-                    end_time=end_dt,
-                    is_all_day=is_all_day,
-                    location=item.get("location"),
-                )
-            )
+                exclude_reclaim = account.get("exclude_reclaim_syncs", False)
+
+                for item in events_result.get("items", []):
+                    if exclude_reclaim and _is_reclaim_sync(item):
+                        continue
+
+                    start_raw = item["start"]
+                    end_raw = item["end"]
+
+                    is_all_day = "date" in start_raw and "dateTime" not in start_raw
+
+                    if is_all_day:
+                        start_dt = datetime.fromisoformat(start_raw["date"]).replace(
+                            tzinfo=tz
+                        )
+                        end_dt = datetime.fromisoformat(end_raw["date"]).replace(tzinfo=tz)
+                    else:
+                        start_dt = datetime.fromisoformat(start_raw["dateTime"]).astimezone(tz)
+                        end_dt = datetime.fromisoformat(end_raw["dateTime"]).astimezone(tz)
+
+                    events.append(
+                        CalendarEvent(
+                            title=item.get("summary", "(No title)"),
+                            start_time=start_dt,
+                            end_time=end_dt,
+                            is_all_day=is_all_day,
+                            location=item.get("location"),
+                        )
+                    )
+
+        # Merge: all-day events first, then by start time, trimmed to limit.
+        events.sort(key=lambda e: (not e.is_all_day, e.start_time))
+        events = events[: config.NUM_CALENDAR_EVENTS]
 
         _cache = events
-        logger.debug("Calendar fetched: %d events", len(events))
+        logger.debug("Calendar fetched: %d events across %d calendars",
+                     len(events), total_calendars)
         return events
 
     except FileNotFoundError as exc:

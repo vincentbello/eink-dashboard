@@ -10,32 +10,22 @@ import os
 # ---------------------------------------------------------------------------
 # Location
 # ---------------------------------------------------------------------------
-LATITUDE: float = 40.7128
-LONGITUDE: float = -74.0060
+LATITUDE: float = 40.71771557633474
+LONGITUDE: float = -73.95739191241212
 TIMEZONE: str = "America/New_York"
 
 # ---------------------------------------------------------------------------
 # MTA Subway
 # ---------------------------------------------------------------------------
-MTA_API_KEY: str = os.environ.get("MTA_API_KEY", "your_mta_api_key")
-
 # The stop ID to monitor.  Look up your stop in the MTA static GTFS stops.txt
 # (see README for instructions).  The suffix is the direction:
 #   N = Northbound (Uptown)   S = Southbound (Downtown)
-SUBWAY_STOP_ID: str = "120S"  # Canal St – 1/2/3 southbound
+SUBWAY_STOP_ID: str = "L08N"  # Bedford Av – L towards Manhattan
+SUBWAY_STATION_LABEL: str = "Bedford Ave - Manhattan"
 
 # GTFS-RT feed URL for the subway lines serving your stop.
-# Replace with the appropriate feed for your line:
-#   1/2/3/4/5/6/7: https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs
-#   A/C/E:         https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace
-#   B/D/F/M:       https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm
-#   G:             https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g
-#   J/Z:           https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz
-#   L:             https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l
-#   N/Q/R/W:       https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw
-#   S:             https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-si
 SUBWAY_LINE_FEED_URL: str = (
-    "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs"
+    "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l"
 )
 
 NUM_ARRIVALS_TO_SHOW: int = 3
@@ -44,14 +34,28 @@ NUM_ARRIVALS_TO_SHOW: int = 3
 # Citi Bike
 # ---------------------------------------------------------------------------
 # Find your nearest station IDs from the GBFS feed – see README.
-CITIBIKE_STATION_IDS: list[str] = ["3279", "3182"]
+CITIBIKE_STATION_IDS: list[str] = [
+    "1786698974100683436",                   # N 7 St & Driggs Ave
+    "66dd039b-0aca-11e7-82f6-3863bb44ef7c",  # N 6 St & Bedford Ave
+]
 
 # ---------------------------------------------------------------------------
 # Google Calendar
 # ---------------------------------------------------------------------------
-GOOGLE_CALENDAR_ID: str = "primary"
+# Each entry is one Google account. Use a separate token_path per account so
+# that multiple Google accounts can be authorised independently.
+GOOGLE_CALENDAR_ACCOUNTS: list[dict] = [
+    {
+        "token_path": "token_personal.json",
+        "calendar_ids": ["primary"],
+    },
+    {
+        "token_path": "token_work.json",
+        "calendar_ids": ["primary"],  # "primary" = vince@joyfulhealth.io
+        "exclude_reclaim_syncs": True,
+    },
+]
 GOOGLE_CREDENTIALS_PATH: str = "credentials.json"
-GOOGLE_TOKEN_PATH: str = "token.json"
 NUM_CALENDAR_EVENTS: int = 5
 
 # ---------------------------------------------------------------------------
@@ -74,8 +78,8 @@ FULL_REFRESH_INTERVAL: int = 900          # weather + calendar + full redraw (15
 # ---------------------------------------------------------------------------
 # Fonts  (paths relative to the project root)
 # ---------------------------------------------------------------------------
-FONT_REGULAR: str = "assets/fonts/DejaVuSans.ttf"
-FONT_BOLD: str = "assets/fonts/DejaVuSans-Bold.ttf"
+FONT_REGULAR: str = "assets/fonts/SpaceGrotesk-Regular.ttf"
+FONT_BOLD: str = "assets/fonts/SpaceGrotesk-Bold.ttf"
 
 # Font sizes (pixels)
 FONT_SIZE_XL: int = 52   # clock

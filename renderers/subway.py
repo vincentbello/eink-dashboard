@@ -30,7 +30,7 @@ import config
 logger = logging.getLogger(__name__)
 
 _SECTION_HEADER = "SUBWAY"
-_HEADER_HEIGHT = 30
+_HEADER_HEIGHT = 38
 _BULLET_SIZE = 28   # bullet circle diameter
 _LEFT_PAD = 10
 _ROW_GAP = 6
@@ -66,11 +66,9 @@ class SubwayRenderer(BaseRenderer):
             self.draw_text(x, r.y + _HEADER_HEIGHT + 10, "No arrivals found", self.fonts.sm)
             return
 
-        # Stop sub-header (stop ID + direction)
-        direction = data[0].direction if data else ""
-        sub_header = f"{config.SUBWAY_STOP_ID}  ·  {direction}"
+        # Stop sub-header
         sub_y = r.y + _HEADER_HEIGHT + 4
-        self.draw_text(x, sub_y, sub_header, self.fonts.sm)
+        self.draw_text(x, sub_y, config.SUBWAY_STATION_LABEL, self.fonts.sm)
 
         # ── Arrival rows ─────────────────────────────────────────────
         row_height = max(_BULLET_SIZE, self._text_height(self.fonts.md)) + _ROW_GAP
@@ -80,13 +78,22 @@ class SubwayRenderer(BaseRenderer):
             if y + row_height > r.y2:
                 break
 
-            self._draw_bullet(arrival.route_id, r.x + _LEFT_PAD, y)
-
             # Minutes away text
             mins_str = "Due" if arrival.minutes_away == 0 else f"{arrival.minutes_away} min"
             font = self.fonts.lg if arrival.minutes_away == 0 else self.fonts.md
+
+            # Use textbbox for pixel-accurate vertical centering (excludes descent whitespace)
+            bbox = self.draw.textbbox((0, 0), mins_str, font=font)
+            text_visual_h = bbox[3] - bbox[1]
+            text_top_offset = bbox[1]  # gap between anchor point and visible top
+
+            item_h = max(_BULLET_SIZE, text_visual_h)
+            bullet_y = y + (item_h - _BULLET_SIZE) // 2
+            text_y = y + (item_h - text_visual_h) // 2 - text_top_offset + 6
+
+            self._draw_bullet(arrival.route_id, r.x + _LEFT_PAD, bullet_y)
             text_x = r.x + _LEFT_PAD + _BULLET_SIZE + 10
-            self.draw_text(text_x, y + (_BULLET_SIZE - self._text_height(font)) // 2, mins_str, font)
+            self.draw_text(text_x, text_y, mins_str, font)
 
             y += row_height
 
