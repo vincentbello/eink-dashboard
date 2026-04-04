@@ -89,7 +89,10 @@ VENV_DIR="$(sudo -u "${REAL_USER}" "${POETRY}" env info --path)"
 WAVESHARE_DIR="${PROJECT_ROOT}/waveshare_epaper"
 
 if [[ -d "${WAVESHARE_DIR}" ]]; then
-    log "Waveshare repo already cloned — pulling latest…"
+    log "Waveshare repo already cloned — fixing ownership, then pulling latest…"
+    # Must chown before git: root-owned clone + git as REAL_USER triggers
+    # "dubious ownership"; pip also needs write access for *.egg-info in-tree.
+    chown -R "${REAL_USER}:${REAL_USER}" "${WAVESHARE_DIR}"
     sudo -u "${REAL_USER}" git -C "${WAVESHARE_DIR}" pull --quiet
 else
     log "Cloning Waveshare e-Paper library…"
@@ -97,8 +100,6 @@ else
         https://github.com/waveshare/e-Paper.git \
         "${WAVESHARE_DIR}" --quiet
 fi
-# If setup was ever run entirely as root, this tree may be root-owned while
-# pip (via Poetry) runs as REAL_USER — setuptools needs to write *.egg-info here.
 chown -R "${REAL_USER}:${REAL_USER}" "${WAVESHARE_DIR}"
 
 log "Installing Waveshare Python library via Poetry…"
