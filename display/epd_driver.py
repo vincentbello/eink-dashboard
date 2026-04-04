@@ -20,15 +20,20 @@ logger = logging.getLogger(__name__)
 # Attempt to import the Waveshare library.
 # This will succeed only on a Raspberry Pi with the library installed.
 # ---------------------------------------------------------------------------
+_WAVESHARE_IMPORT_ERROR: ImportError | None = None
 try:
     from waveshare_epd import epd7in5_V2 as _epd_module  # type: ignore[import]
 
     _WAVESHARE_AVAILABLE = True
-except ImportError:
+except ImportError as exc:
     _WAVESHARE_AVAILABLE = False
-    logger.info(
-        "waveshare_epd not found — hardware display unavailable. "
-        "Set MOCK_MODE=1 or config.MOCK_MODE=True to run without hardware."
+    _WAVESHARE_IMPORT_ERROR = exc
+    logger.warning(
+        "waveshare_epd hardware driver not loaded (%s: %s). "
+        "On a Pi: `poetry install` (pulls in gpiozero), install Waveshare lib via setup.sh, "
+        "enable SPI, user in spi+gpio groups.",
+        type(exc).__name__,
+        exc,
     )
 
 
@@ -44,7 +49,14 @@ class EPDDriver:
         self._mock: bool = config.MOCK_MODE or not _WAVESHARE_AVAILABLE
 
         if self._mock:
-            logger.info("EPDDriver: running in MOCK mode (no hardware)")
+            if not config.MOCK_MODE and _WAVESHARE_IMPORT_ERROR is not None:
+                logger.warning(
+                    "EPDDriver: MOCK output (hardware import failed — see log above). "
+                    "Writing to %s",
+                    config.MOCK_OUTPUT_PATH,
+                )
+            else:
+                logger.info("EPDDriver: running in MOCK mode (no hardware)")
         else:
             logger.info("EPDDriver: hardware mode (epd7in5_V2)")
 
