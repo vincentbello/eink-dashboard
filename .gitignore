@@ -1,2 +1,7 @@
 credentials.json
 token_*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
