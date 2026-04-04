@@ -52,7 +52,7 @@ apt-get install -y --no-install-recommends \
     python3-pip \
     python3-dev \
     libopenjp2-7 \
-    libtiff5 \
+    libtiff6 \
     libjpeg-dev \
     libfreetype6-dev \
     zlib1g-dev \
