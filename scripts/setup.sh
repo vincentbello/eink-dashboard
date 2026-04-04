@@ -58,7 +58,8 @@ apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libfreetype6-dev \
     zlib1g-dev \
-    git
+    git \
+    swig
 
 # ---------------------------------------------------------------------------
 # 2. Poetry + Python dependencies
