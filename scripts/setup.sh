@@ -59,7 +59,8 @@ apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     zlib1g-dev \
     git \
-    swig
+    swig \
+    liblgpio-dev
 
 # ---------------------------------------------------------------------------
 # 2. Poetry + Python dependencies
