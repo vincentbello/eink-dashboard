@@ -50,7 +50,9 @@ log "Installing system packages…"
 apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
+    python3-venv \
     python3-dev \
+    curl \
     libopenjp2-7 \
     libtiff6 \
     libjpeg-dev \
@@ -63,13 +65,18 @@ apt-get install -y --no-install-recommends \
 # ---------------------------------------------------------------------------
 # 2. Poetry + Python dependencies
 # ---------------------------------------------------------------------------
+# Raspberry Pi OS / Debian mark system Python as "externally managed" (PEP 668),
+# so `pip install --user poetry` fails. The official installer puts Poetry in
+# ~/.local (no system-site pip). We avoid apt python3-poetry here: it is often
+# Poetry 1.x while this project needs poetry-core 2.x (see pyproject.toml).
 
-if ! command -v poetry &>/dev/null; then
-    log "Installing Poetry…"
-    sudo -u "${REAL_USER}" pip install --user poetry --quiet
+POETRY="${REAL_HOME}/.local/bin/poetry"
+if ! sudo -u "${REAL_USER}" test -x "${POETRY}"; then
+    log "Installing Poetry (official installer)…"
+    sudo -u "${REAL_USER}" env HOME="${REAL_HOME}" \
+        bash -c 'curl -sSL https://install.python-poetry.org | python3 - --yes'
 fi
-
-POETRY="$(sudo -u "${REAL_USER}" python3 -m site --user-base)/bin/poetry"
+sudo -u "${REAL_USER}" test -x "${POETRY}" || die "Poetry not found at ${POETRY}"
 
 log "Installing Python dependencies via Poetry…"
 cd "${PROJECT_ROOT}"
