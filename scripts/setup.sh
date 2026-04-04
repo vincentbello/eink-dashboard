@@ -90,13 +90,16 @@ WAVESHARE_DIR="${PROJECT_ROOT}/waveshare_epaper"
 
 if [[ -d "${WAVESHARE_DIR}" ]]; then
     log "Waveshare repo already cloned — pulling latest…"
-    git -C "${WAVESHARE_DIR}" pull --quiet
+    sudo -u "${REAL_USER}" git -C "${WAVESHARE_DIR}" pull --quiet
 else
     log "Cloning Waveshare e-Paper library…"
-    git clone --depth=1 \
+    sudo -u "${REAL_USER}" git clone --depth=1 \
         https://github.com/waveshare/e-Paper.git \
         "${WAVESHARE_DIR}" --quiet
 fi
+# If setup was ever run entirely as root, this tree may be root-owned while
+# pip (via Poetry) runs as REAL_USER — setuptools needs to write *.egg-info here.
+chown -R "${REAL_USER}:${REAL_USER}" "${WAVESHARE_DIR}"
 
 log "Installing Waveshare Python library via Poetry…"
 sudo -u "${REAL_USER}" "${POETRY}" run pip install \
