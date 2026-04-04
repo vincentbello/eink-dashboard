@@ -9,7 +9,7 @@
 #   1. Installs system (apt) dependencies and Poetry
 #   2. Installs Python dependencies via poetry install
 #   3. Clones the Waveshare e-Paper library and installs its Python module
-#   4. Downloads DejaVu fonts into assets/fonts/
+#   4. Verifies bundled Space Grotesk fonts in assets/fonts/
 #   5. Creates a systemd service that starts the dashboard on boot
 #   6. Enables and starts the service
 
@@ -58,9 +58,7 @@ apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libfreetype6-dev \
     zlib1g-dev \
-    git \
-    fonts-dejavu-core \
-    wget
+    git
 
 # ---------------------------------------------------------------------------
 # 2. Poetry + Python dependencies
@@ -105,51 +103,18 @@ sudo -u "${REAL_USER}" "${POETRY}" run pip install \
     "${WAVESHARE_DIR}/RaspberryPi_JetsonNano/python/" --quiet
 
 # ---------------------------------------------------------------------------
-# 4. DejaVu fonts
+# 4. SpaceGrotesk fonts (bundled in repo)
 # ---------------------------------------------------------------------------
 
 FONT_DIR="${PROJECT_ROOT}/assets/fonts"
-mkdir -p "${FONT_DIR}"
+FONT_REGULAR="${FONT_DIR}/SpaceGrotesk-Regular.ttf"
+FONT_BOLD="${FONT_DIR}/SpaceGrotesk-Bold.ttf"
 
-FONT_REGULAR="${FONT_DIR}/DejaVuSans.ttf"
-FONT_BOLD="${FONT_DIR}/DejaVuSans-Bold.ttf"
+[[ -f "${FONT_REGULAR}" ]] || die "Missing font (clone/checkout repo): ${FONT_REGULAR}"
+[[ -f "${FONT_BOLD}" ]] || die "Missing font (clone/checkout repo): ${FONT_BOLD}"
+log "Space Grotesk fonts present: ${FONT_DIR}"
 
-# DejaVu fonts are packaged in fonts-dejavu-core (installed above).
-# Copy from the system font directory if not already present.
-SYSTEM_FONT_DIRS=(
-    "/usr/share/fonts/truetype/dejavu"
-    "/usr/share/fonts/dejavu"
-)
-
-copy_font() {
-    local src_name="$1"
-    local dst="$2"
-    if [[ -f "${dst}" ]]; then
-        log "Font already exists: ${dst}"
-        return
-    fi
-    for dir in "${SYSTEM_FONT_DIRS[@]}"; do
-        if [[ -f "${dir}/${src_name}" ]]; then
-            cp "${dir}/${src_name}" "${dst}"
-            log "Copied ${src_name} → ${dst}"
-            return
-        fi
-    done
-    # Fallback: download from SourceForge release archive.
-    log "System font not found — downloading from SourceForge…"
-    local tmp_archive
-    tmp_archive="$(mktemp /tmp/dejavu.XXXXXX.tar.bz2)"
-    wget -q -O "${tmp_archive}" \
-        "https://sourceforge.net/projects/dejavu/files/dejavu/2.37/dejavu-fonts-ttf-2.37.tar.bz2/download"
-    tar -xjf "${tmp_archive}" -C /tmp/ dejavu-fonts-ttf-2.37/ttf/"${src_name}"
-    mv "/tmp/dejavu-fonts-ttf-2.37/ttf/${src_name}" "${dst}"
-    rm -f "${tmp_archive}"
-}
-
-copy_font "DejaVuSans.ttf"      "${FONT_REGULAR}"
-copy_font "DejaVuSans-Bold.ttf" "${FONT_BOLD}"
-
-chown "${REAL_USER}:${REAL_USER}" "${FONT_DIR}"/*.ttf 2>/dev/null || true
+chown "${REAL_USER}:${REAL_USER}" "${FONT_REGULAR}" "${FONT_BOLD}"
 
 # ---------------------------------------------------------------------------
 # 5. Systemd service

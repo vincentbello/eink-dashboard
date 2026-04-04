@@ -117,7 +117,7 @@ class FontSet:
 
 
 def load_fonts() -> FontSet:
-    """Load DejaVu fonts from the paths declared in *config*.
+    """Load Space Grotesk from the paths declared in *config*.
 
     Falls back to PIL's built-in bitmap font if the TTF files are missing
     (useful for CI environments without the font assets).
@@ -132,7 +132,7 @@ def load_fonts() -> FontSet:
 
             logging.getLogger(__name__).warning(
                 "Font not found: %s — falling back to default bitmap font. "
-                "Run scripts/setup.sh to download fonts.",
+                "Add the bundled TTFs under assets/fonts/ or run scripts/setup.sh on the Pi.",
                 path,
             )
             # FreeType fallback: PIL default is not a FreeTypeFont but the
