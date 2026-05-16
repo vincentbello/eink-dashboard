@@ -294,8 +294,10 @@ def main() -> None:
     driver.init()
     fonts = load_fonts()
 
-    last_full_refresh: float = 0.0
-    last_transit_refresh: float = 0.0
+    # Initialize to -interval so the first loop always triggers a full refresh,
+    # regardless of how long the system has been up (time.monotonic() is uptime).
+    last_full_refresh: float = -config.FULL_REFRESH_INTERVAL
+    last_transit_refresh: float = -config.TRANSIT_REFRESH_INTERVAL
 
     # Cached data — kept across iterations so a failed refresh doesn't
     # blank the display.
