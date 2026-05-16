@@ -14,6 +14,9 @@ LATITUDE: float = 40.71771557633474
 LONGITUDE: float = -73.95739191241212
 TIMEZONE: str = "America/New_York"
 
+# Open-Meteo: "celsius" or "fahrenheit" (see fetchers.weather).
+WEATHER_TEMPERATURE_UNIT: str = "celsius"
+
 # ---------------------------------------------------------------------------
 # MTA Subway
 # ---------------------------------------------------------------------------
@@ -78,8 +81,11 @@ FULL_REFRESH_INTERVAL: int = 900          # weather + calendar + full redraw (15
 # ---------------------------------------------------------------------------
 # Fonts  (paths relative to the project root)
 # ---------------------------------------------------------------------------
-FONT_REGULAR: str = "assets/fonts/SpaceGrotesk-Regular.ttf"
-FONT_BOLD: str = "assets/fonts/SpaceGrotesk-Bold.ttf"
+# Bookerly is not bundled (Amazon license). Place Bookerly-Regular.ttf and
+# Bookerly-Bold.ttf under assets/fonts/ (e.g. copy from your Kindle device).
+# OpenType (.otf) works too — set FONT_* to the correct filenames.
+FONT_REGULAR: str = "assets/fonts/Bookerly-Regular.ttf"
+FONT_BOLD: str = "assets/fonts/Bookerly-Bold.ttf"
 
 # Font sizes (pixels)
 FONT_SIZE_XL: int = 52   # clock

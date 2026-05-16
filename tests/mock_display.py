@@ -48,7 +48,8 @@ from PIL import Image, ImageDraw
 from display import load_fonts, HEADER_WEATHER, CALENDAR, SUBWAY, CITIBIKE
 from display.layout import HEADER_TIME, HEADER_DATE
 from display.epd_driver import EPDDriver
-from fetchers import fetch_weather, fetch_calendar, fetch_subway, fetch_citibike
+from fetchers import fetch_calendar, fetch_citibike, fetch_subway, fetch_weather
+from fetchers.weather import temperature_unit_suffix
 from renderers import WeatherRenderer, CalendarRenderer, SubwayRenderer, CitiBikeRenderer
 
 
@@ -77,7 +78,7 @@ def main() -> None:
     weather = fetch_weather()
     if weather:
         print(
-            f"      {weather.temperature:.1f}°F  {weather.condition}"
+            f"      {weather.temperature:.1f}{temperature_unit_suffix()}  {weather.condition}"
             f"  (icon: {weather.icon_key})  wind {weather.wind_speed:.0f} mph"
         )
     else:

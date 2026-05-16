@@ -9,7 +9,7 @@
 #   1. Installs system (apt) dependencies and Poetry
 #   2. Installs Python dependencies via poetry install
 #   3. Clones the Waveshare e-Paper library and installs its Python module
-#   4. Verifies bundled Space Grotesk fonts in assets/fonts/
+#   4. Verifies Bookerly fonts in assets/fonts/ (you must supply the TTFs)
 #   5. Creates a systemd service that starts the dashboard on boot
 #   6. Enables and starts the service
 
@@ -109,16 +109,17 @@ sudo -u "${REAL_USER}" "${POETRY}" run pip install \
     "${WAVESHARE_DIR}/RaspberryPi_JetsonNano/python/" --quiet
 
 # ---------------------------------------------------------------------------
-# 4. SpaceGrotesk fonts (bundled in repo)
+# 4. Bookerly fonts (not bundled — add Bookerly-Regular.ttf and
+#    Bookerly-Bold.ttf to assets/fonts/ before running setup)
 # ---------------------------------------------------------------------------
 
 FONT_DIR="${PROJECT_ROOT}/assets/fonts"
-FONT_REGULAR="${FONT_DIR}/SpaceGrotesk-Regular.ttf"
-FONT_BOLD="${FONT_DIR}/SpaceGrotesk-Bold.ttf"
+FONT_REGULAR="${FONT_DIR}/Bookerly-Regular.ttf"
+FONT_BOLD="${FONT_DIR}/Bookerly-Bold.ttf"
 
-[[ -f "${FONT_REGULAR}" ]] || die "Missing font (clone/checkout repo): ${FONT_REGULAR}"
-[[ -f "${FONT_BOLD}" ]] || die "Missing font (clone/checkout repo): ${FONT_BOLD}"
-log "Space Grotesk fonts present: ${FONT_DIR}"
+[[ -f "${FONT_REGULAR}" ]] || die "Missing font: ${FONT_REGULAR} (add Bookerly TTFs to ${FONT_DIR})"
+[[ -f "${FONT_BOLD}" ]] || die "Missing font: ${FONT_BOLD} (add Bookerly TTFs to ${FONT_DIR})"
+log "Bookerly fonts present: ${FONT_DIR}"
 
 chown "${REAL_USER}:${REAL_USER}" "${FONT_REGULAR}" "${FONT_BOLD}"
 

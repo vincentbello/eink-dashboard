@@ -3,7 +3,7 @@ renderers/weather.py — Draws weather conditions in the HEADER_WEATHER region.
 
 Layout within the region (260 × 80 px):
   ┌─────────────────────────────┐
-  │  [ICON]   72°F              │
+  │  [ICON]   22°C              │
   │           Partly cloudy     │
   │           Wind 8 mph        │
   └─────────────────────────────┘
@@ -19,7 +19,7 @@ from typing import Optional
 from PIL import ImageDraw
 
 from display.layout import FontSet, Region
-from fetchers.weather import WeatherData
+from fetchers.weather import WeatherData, temperature_unit_suffix
 from renderers.base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class WeatherRenderer(BaseRenderer):
         text_y = r.y + 6
 
         # Temperature (large)
-        temp_str = f"{data.temperature:.0f}°F"
+        temp_str = f"{data.temperature:.0f}{temperature_unit_suffix()}"
         self.draw_text(text_x, text_y, temp_str, self.fonts.lg)
 
         # Condition

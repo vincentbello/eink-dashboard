@@ -18,6 +18,17 @@ import config
 
 logger = logging.getLogger(__name__)
 
+
+def _open_meteo_temperature_unit() -> str:
+    u = str(getattr(config, "WEATHER_TEMPERATURE_UNIT", "celsius")).lower()
+    return "celsius" if u == "celsius" else "fahrenheit"
+
+
+def temperature_unit_suffix() -> str:
+    """Return ``°C`` or ``°F`` for labels, matching :func:`_open_meteo_temperature_unit`."""
+    return "°C" if _open_meteo_temperature_unit() == "celsius" else "°F"
+
+
 # ---------------------------------------------------------------------------
 # WMO weather interpretation codes → (human label, icon key)
 # Full table: https://open-meteo.com/en/docs#weathervariables
@@ -64,7 +75,7 @@ _cache: Optional[WeatherData] = None  # type: ignore[name-defined]  # forward re
 class WeatherData:
     """Current weather conditions."""
 
-    temperature: float       # °F
+    temperature: float       # degrees; unit matches config.WEATHER_TEMPERATURE_UNIT
     condition: str           # human-readable string
     wind_speed: float        # mph
     icon_key: str            # one of: sunny | cloudy | rainy | snowy | stormy | foggy
@@ -85,7 +96,7 @@ def fetch_weather() -> Optional[WeatherData]:
                 "latitude": config.LATITUDE,
                 "longitude": config.LONGITUDE,
                 "current": "temperature_2m,weathercode,windspeed_10m,precipitation",
-                "temperature_unit": "fahrenheit",
+                "temperature_unit": _open_meteo_temperature_unit(),
                 "wind_speed_unit": "mph",
                 "timezone": config.TIMEZONE,
             },
@@ -107,7 +118,11 @@ def fetch_weather() -> Optional[WeatherData]:
         )
         _cache = result
         logger.debug(
-            "Weather fetched: %.1f°F, %s (code %d)", result.temperature, condition, code
+            "Weather fetched: %.1f%s, %s (code %d)",
+            result.temperature,
+            temperature_unit_suffix(),
+            condition,
+            code,
         )
         return result
 
