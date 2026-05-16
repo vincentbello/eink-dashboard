@@ -55,39 +55,27 @@ class WeatherRenderer(BaseRenderer):
 
         r = self.region
 
-        # Layout: temperature on the left, icon on the right, condition/wind below icon
-        # ┌─────────────────────────────┐
-        # │  22°C        [ICON]         │
-        # │              Partly cloudy  │
-        # │              Wind 8 mph     │
-        # └─────────────────────────────┘
+        # Layout: temperature and icon inline, vertically centered
+        # ┌─────────────────────┐
+        # │  22°C  [ICON]       │
+        # └─────────────────────┘
 
-        # Position icon on the right side of the region
-        icon_x = r.x2 - _ICON_SIZE - _ICON_PAD
-        icon_y = r.y + _ICON_PAD
+        # Vertically centered, nudged down slightly
+        row_y = r.y + (r.h - self.fonts.lg.size) // 2 + 2
+        temp_h = self._text_height(self.fonts.lg)
+
+        # Temperature (large font), nudged down slightly for alignment
+        temp_str = f"{data.temperature:.0f}{temperature_unit_suffix()}"
+        temp_x = r.x + _ICON_PAD
+        self.draw_text(temp_x, row_y + 12, temp_str, self.fonts.lg)
+
+        # Icon to the right of temperature
+        temp_bbox = self.draw.textbbox((0, 0), temp_str, font=self.fonts.lg)
+        temp_w = temp_bbox[2] - temp_bbox[0]
+        icon_x = temp_x + temp_w + 12
+        icon_y = row_y + (temp_h - _ICON_SIZE) // 2
 
         self._draw_icon(data.icon_key, icon_x, icon_y, _ICON_SIZE)
-
-        # Temperature (large) — to the left of the icon, vertically aligned with condition text
-        temp_str = f"{data.temperature:.0f}{temperature_unit_suffix()}"
-        # Position temperature so it aligns with the condition/wind text row
-        temp_y = icon_y + _ICON_SIZE // 2 - self._text_height(self.fonts.lg) // 2
-        temp_x = r.x + _ICON_PAD
-        self.draw_text(temp_x, temp_y, temp_str, self.fonts.lg)
-
-        # Condition — below the icon, right-aligned
-        cond_y = icon_y + _ICON_SIZE - 4
-        cond = self.truncate_text(
-            data.condition, self.fonts.sm, r.x2 - temp_x - 4
-        )
-        self.draw_text(temp_x, cond_y, cond, self.fonts.sm)
-
-        # Wind — below condition
-        wind_y = cond_y + self._text_height(self.fonts.sm) + 2
-        wind_str = self.truncate_text(
-            f"Wind {data.wind_speed:.0f} mph", self.fonts.sm, r.x2 - temp_x - 4
-        )
-        self.draw_text(temp_x, wind_y, wind_str, self.fonts.sm)
 
     # ------------------------------------------------------------------
     # Icon drawing (PIL primitives only)
